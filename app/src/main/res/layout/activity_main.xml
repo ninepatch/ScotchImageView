@@ -10,8 +10,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:scaleType="centerInside"
+        app:circle="true"
         app:placeholder="@mipmap/ic_launcher"
-        app:url_image="https://drscdnsssss.500px.org/photo/121716149/m%3D2048/6013a5a333d5d9572ba9fbceaba01196"
-        app:zoomable="false" />
-
+        app:zoomable="true" />
+    <!--     app:url_image="http://feelgrafix.com/data/wallpapers/wallpapers-20.jpg" -->
 </RelativeLayout>

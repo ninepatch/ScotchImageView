@@ -3,12 +3,11 @@ package it.ninepatch.scotchimageview.sample;
 import android.app.Application;
 import android.content.Context;
 import android.net.Uri;
-import android.support.annotation.DrawableRes;
 
 import com.bumptech.glide.Glide;
 
 import it.ninepatch.scotchimageview.ScotchImageView;
-import it.ninepatch.scotchimageview.loader.ClusterInitLoader;
+import it.ninepatch.scotchimageview.loader.ScotchInitLoader;
 import it.ninepatch.scotchimageview.loader.ImageLoaderInterface;
 
 /**
@@ -21,20 +20,20 @@ public class SampleApplication extends Application {
         super.onCreate();
 
 
-        ClusterInitLoader.init(new ImageLoaderInterface() {
+        ScotchInitLoader.init(new ImageLoaderInterface() {
             @Override
             public int placeholder() {
                 return R.drawable.ic_assignment_late_green_300_48dp;
             }
 
             @Override
-            public void load(Context context, ScotchImageView clusterImageZoom, Uri url, @DrawableRes int placeholder) {
-                Glide.with(context).load(url).asBitmap().placeholder(placeholder).into(clusterImageZoom);
+            public void load(Context context, ScotchImageView scotchImageView, Uri url, int placeholder) {
+                Glide.with(context).load(url).asBitmap().into(scotchImageView);
             }
 
             @Override
-            public void clear(ScotchImageView clusterImageZoom) {
-                Glide.clear(clusterImageZoom);
+            public void clear(ScotchImageView scotchImageView) {
+           Glide.clear(scotchImageView);
             }
         });
 

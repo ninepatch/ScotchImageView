@@ -18,12 +18,12 @@ public interface ImageLoaderInterface {
     int placeholder();
 
     /**
-     * @param context current context
-     * @param clusterImageZoom current ScotchImageView
-     * @param url uri to load
-     * @param placeholder res placeholder
+     * @param context          current context
+     * @param scotchImageView current ScotchImageView
+     * @param url              uri to load
+     * @param placeholder      res placeholder
      */
-    void load(Context context, ScotchImageView clusterImageZoom, Uri url, @DrawableRes int placeholder);
+    void load(Context context, ScotchImageView scotchImageView, Uri url, int placeholder);
 
     /**
      * @param clusterImageZoom current ScotchImageView

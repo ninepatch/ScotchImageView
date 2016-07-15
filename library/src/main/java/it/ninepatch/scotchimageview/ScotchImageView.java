@@ -3,8 +3,13 @@ package it.ninepatch.scotchimageview;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
+import android.graphics.BitmapShader;
+import android.graphics.Color;
 import android.graphics.Matrix;
+import android.graphics.Paint;
 import android.graphics.PointF;
+import android.graphics.RectF;
+import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -12,26 +17,24 @@ import android.support.annotation.DrawableRes;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.util.AttributeSet;
-import android.util.Log;
-import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.widget.ImageView;
 
-import it.ninepatch.scotchimageview.loader.ClusterInitLoader;
 import it.ninepatch.scotchimageview.loader.ImageLoaderInterface;
-import it.ninepatch.scotchimageview.utils.ClusterImageCostant;
+import it.ninepatch.scotchimageview.loader.ScotchInitLoader;
+import it.ninepatch.scotchimageview.utils.ScotchImageCostant;
 
 /**
  * Created by luca on 7/12/16.
  **/
-public class ScotchImageView extends ImageView  {
+public class ScotchImageView extends ImageView {
 
     public static String TAG = "ScotchImageView";
 
     private Matrix matrix = new Matrix();
-    private int mode = ClusterImageCostant.NONE;
+    private int mode = ScotchImageCostant.NONE;
     private PointF last = new PointF();
     private PointF start = new PointF();
     private float minScale = 1f;
@@ -44,7 +47,24 @@ public class ScotchImageView extends ImageView  {
     private ScaleGestureDetector scaleGestureDetector;
     private int placeholder;
 
-    private GestureDetector gesture;
+
+    //circle opt
+    private RectF drawableRect;
+    private RectF borderRect;
+    private Matrix shaderMatrix;
+    private Paint bitmapPaint;
+    private Paint borderPaint;
+    private Paint fillPaint;
+
+    private int borderColor = Color.BLACK;
+    private int borderWidth = 0;
+    private int fillColor = Color.TRANSPARENT;
+    private Bitmap bitmap;
+    private BitmapShader bitmapShader;
+    private int bitmapWidth;
+    private int bitmapHeight;
+    private float drawableRadius;
+    private float borderRadius;
 
     public ScotchImageView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
@@ -53,7 +73,9 @@ public class ScotchImageView extends ImageView  {
         setPlaceholder(a.getResourceId(R.styleable.ZoomImage_placeholder, 0));
         setUrlImage(a.getString(R.styleable.ZoomImage_url_image));
         setupZoom(a.getBoolean(R.styleable.ZoomImage_zoomable, false));
+        setupCircle(a.getBoolean(R.styleable.ZoomImage_circle, false));
         a.recycle();
+
     }
 
     public ScotchImageView(Context context, AttributeSet attr) {
@@ -66,35 +88,6 @@ public class ScotchImageView extends ImageView  {
 
     public void setMaxScale(float maxScale) {
         this.maxScale = maxScale;
-    }
-
-    private void setZoomToDoubleTap(boolean doubleTap) {
-        if (!doubleTap) return;
-
-        gesture.setOnDoubleTapListener(new GestureDetector.OnDoubleTapListener() {
-    @Override
-    public boolean onSingleTapConfirmed(MotionEvent motionEvent) {
-
-        return false;
-    }
-
-    @Override
-    public boolean onDoubleTap(MotionEvent motionEvent) {
-
-
-        setImageMatrix(matrix);
-        invalidate();
-        return false;
-    }
-
-    @Override
-    public boolean onDoubleTapEvent(MotionEvent motionEvent) {
-        return false;
-    }
-});
-
-
-
     }
 
     @Override
@@ -151,21 +144,21 @@ public class ScotchImageView extends ImageView  {
                     case MotionEvent.ACTION_DOWN:
                         last.set(event.getX(), event.getY());
                         start.set(last);
-                        mode = ClusterImageCostant.DRAG;
+                        mode = ScotchImageCostant.DRAG;
                         break;
                     //when two fingers are touching
                     //set the mode to ZOOM
                     case MotionEvent.ACTION_POINTER_DOWN:
                         last.set(event.getX(), event.getY());
                         start.set(last);
-                        mode = ClusterImageCostant.ZOOM;
+                        mode = ScotchImageCostant.ZOOM;
                         break;
                     //when a finger moves
                     //If mode is applicable move image
                     case MotionEvent.ACTION_MOVE:
                         //if the mode is ZOOM or
                         //if the <ode is DRAG and already zoomed
-                        if (mode == ClusterImageCostant.ZOOM || (mode == ClusterImageCostant.DRAG && saveScale > minScale)) {
+                        if (mode == ScotchImageCostant.ZOOM || (mode == ScotchImageCostant.DRAG && saveScale > minScale)) {
                             float deltaX = curr.x - last.x;// x difference
                             float deltaY = curr.y - last.y;// y difference
                             float scaleWidth = Math.round(origWidth * saveScale);// width after applying current scale
@@ -180,6 +173,7 @@ public class ScotchImageView extends ImageView  {
                                 else if (y + deltaY < -bottom)
                                     deltaY = -(y + bottom);
                             }
+
                             //if scaleHeight is smaller than the views height
                             //in other words if the image height fits in the view
                             //limit up and down movement
@@ -211,15 +205,15 @@ public class ScotchImageView extends ImageView  {
                         break;
                     //first finger is lifted
                     case MotionEvent.ACTION_UP:
-                        mode = ClusterImageCostant.NONE;
+                        mode = ScotchImageCostant.NONE;
                         int xDiff = (int) Math.abs(curr.x - start.x);
                         int yDiff = (int) Math.abs(curr.y - start.y);
-                        if (xDiff < ClusterImageCostant.CLICK && yDiff < ClusterImageCostant.CLICK)
+                        if (xDiff < ScotchImageCostant.CLICK && yDiff < ScotchImageCostant.CLICK)
                             performClick();
                         break;
                     // second finger is lifted
                     case MotionEvent.ACTION_POINTER_UP:
-                        mode = ClusterImageCostant.NONE;
+                        mode = ScotchImageCostant.NONE;
                         break;
                 }
                 setImageMatrix(matrix);
@@ -242,7 +236,6 @@ public class ScotchImageView extends ImageView  {
     @Override
     public void setImageResource(int resId) {
         super.setImageResource(resId);
-
         Drawable drawable = ContextCompat.getDrawable(getContext(), resId);
         Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
         bmWidth = bitmap.getWidth();
@@ -253,7 +246,10 @@ public class ScotchImageView extends ImageView  {
     @Override
     public void setImageDrawable(Drawable drawable) {
         super.setImageDrawable(drawable);
+        if (drawable == null || !(drawable instanceof Drawable)) return;
+
         Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
+
         bmWidth = bitmap.getWidth();
         bmHeight = bitmap.getHeight();
     }
@@ -263,6 +259,7 @@ public class ScotchImageView extends ImageView  {
      *
      * @param url image url
      */
+
     public void setUrlImage(String url) {
         if (TextUtils.isEmpty(url)) return;
         setUrlImage(Uri.parse(url));
@@ -275,18 +272,104 @@ public class ScotchImageView extends ImageView  {
      */
     public void setUrlImage(Uri url) {
         if (url == null) return;
-        ImageLoaderInterface initLoader = ClusterInitLoader.getInstance().getImageLoaderInterface();
+        ImageLoaderInterface initLoader = ScotchInitLoader.getInstance().getImageLoaderInterface();
+
         if (placeholder == 0) {
             placeholder = initLoader.placeholder();
         }
+
         initLoader.load(getContext(), this, url, placeholder);
+    }
+
+    private void setupCircle(boolean circle) {
+
+        if (!circle) return;
+
+        if (getWidth() == 0 && getHeight() == 0) {
+            return;
+        }
+
+        bitmap = ((BitmapDrawable) getDrawable()).getBitmap();
+
+        drawableRect = new RectF();
+        borderRect = new RectF();
+        shaderMatrix = new Matrix();
+        bitmapPaint = new Paint();
+        borderPaint = new Paint();
+        fillPaint = new Paint();
+
+
+        bitmapShader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+
+        bitmapPaint.setAntiAlias(true);
+        bitmapPaint.setShader(bitmapShader);
+        borderPaint.setStyle(Paint.Style.STROKE);
+        borderPaint.setAntiAlias(true);
+        borderPaint.setColor(borderColor);
+        borderPaint.setStrokeWidth(borderWidth);
+
+        fillPaint.setStyle(Paint.Style.FILL);
+        fillPaint.setAntiAlias(true);
+        fillPaint.setColor(fillColor);
+
+        bitmapHeight = bitmap.getHeight();
+        bitmapWidth = bitmap.getWidth();
+
+        borderRect.set(getRect());
+        borderRadius = Math.min((borderRect.height() - borderWidth) / 2.0f, (borderRect.width() - borderWidth) / 2.0f);
+
+        drawableRect.set(borderRect);
+       /* if (!borderOverlay && borderWidth > 0) {
+            drawableRect.inset(borderWidth - 1.0f, borderWidth - 1.0f);
+        }
+*/
+        drawableRadius = Math.min(drawableRect.height() / 2.0f, drawableRect.width() / 2.0f);
+
+
+        updateShaderMatrix();
+        invalidate();
+    }
+
+    private RectF getRect() {
+        int width = getWidth() - getPaddingLeft() - getPaddingRight();
+        int height = getHeight() - getPaddingTop() - getPaddingBottom();
+
+        int sideLength = Math.min(height, width);
+
+        float left = getPaddingLeft() + (width - sideLength) / 2f;
+        float top = getPaddingTop() + (height - sideLength) / 2f;
+
+        return new RectF(left, top, left + sideLength, top + sideLength);
+    }
+
+
+    private void updateShaderMatrix() {
+
+        float scale;
+        float dx = 0;
+        float dy = 0;
+
+
+        if (this.bitmapWidth * this.drawableRect.height() > drawableRect.width() * bitmapHeight) {
+            scale = drawableRect.height() / (float) bitmapHeight;
+            dx = (drawableRect.width() - bitmapWidth * scale) * 0.5f;
+        } else {
+            scale = drawableRect.width() / (float) bitmapWidth;
+            dy = (drawableRect.height() - bitmapHeight * scale) * 0.5f;
+        }
+        shaderMatrix.set(null);
+        shaderMatrix.setScale(scale, scale);
+        shaderMatrix.postTranslate((int) (dx + 0.5f) + drawableRect.left, (int) (dy + 0.5f) + drawableRect.top);
+
+        bitmapShader.setLocalMatrix(shaderMatrix);
+
     }
 
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
 
         @Override
         public boolean onScaleBegin(ScaleGestureDetector detector) {
-            mode = ClusterImageCostant.ZOOM;
+            mode = ScotchImageCostant.ZOOM;
             return true;
         }
 

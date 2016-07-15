@@ -4,5 +4,6 @@
         <attr name="zoomable" format="boolean" />
         <attr name="url_image" format="string" />
         <attr name="placeholder" format="reference" />
+        <attr name="circle" format="boolean"/>
     </declare-styleable>
 </resources>

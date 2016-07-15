@@ -9,15 +9,15 @@ import it.ninepatch.scotchimageview.ScotchImageView;
 /**
  * Created by Raphael Bussa on 7/12/16.
  */
-public class ClusterInitLoader {
+public class ScotchInitLoader {
 
-    private static final String TAG = ClusterInitLoader.class.getName();
+    private static final String TAG = ScotchInitLoader.class.getName();
 
-    private static ClusterInitLoader instance;
+    private static ScotchInitLoader instance;
 
     private ImageLoaderInterface imageLoaderInterface;
 
-    public static ClusterInitLoader init(ImageLoaderInterface imageLoaderInterface) {
+    public static ScotchInitLoader init(ImageLoaderInterface imageLoaderInterface) {
         initInstance();
         instance.imageLoaderInterface = imageLoaderInterface;
         return instance;
@@ -25,16 +25,17 @@ public class ClusterInitLoader {
 
     private static void initInstance() {
         if (instance == null) {
-            instance = new ClusterInitLoader();
+            instance = new ScotchInitLoader();
         }
     }
 
-    public static ClusterInitLoader getInstance() {
+    public static ScotchInitLoader getInstance() {
         initInstance();
         return instance;
     }
 
     public ImageLoaderInterface getImageLoaderInterface() {
+
         if (imageLoaderInterface == null) {
             imageLoaderInterface = new ImageLoaderInterface() {
                 @Override
@@ -43,7 +44,7 @@ public class ClusterInitLoader {
                 }
 
                 @Override
-                public void load(Context context, ScotchImageView clusterImageZoom, Uri url, int placeholder) {
+                public void load(Context context, ScotchImageView scotchImageView, Uri url, int placeholder) {
                     Log.e(TAG, "init image loader in your application class for set image from url");
                 }
 
