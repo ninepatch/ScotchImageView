@@ -11,11 +11,23 @@ import it.ninepatch.scotchimageview.ScotchImageView;
  */
 public interface ImageLoaderInterface {
 
+    /**
+     * @return drawable res of placeholder
+     */
     @DrawableRes
     int placeholder();
 
-    void load(Context context, ScotchImageView clusterImageZoom, Uri url, int placeholder);
+    /**
+     * @param context current context
+     * @param clusterImageZoom current ScotchImageView
+     * @param url uri to load
+     * @param placeholder res placeholder
+     */
+    void load(Context context, ScotchImageView clusterImageZoom, Uri url, @DrawableRes int placeholder);
 
+    /**
+     * @param clusterImageZoom current ScotchImageView
+     */
     void clear(ScotchImageView clusterImageZoom);
 
 }

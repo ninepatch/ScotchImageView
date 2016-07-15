@@ -3,6 +3,7 @@ package it.ninepatch.scotchimageview.sample;
 import android.app.Application;
 import android.content.Context;
 import android.net.Uri;
+import android.support.annotation.DrawableRes;
 
 import com.bumptech.glide.Glide;
 
@@ -23,16 +24,12 @@ public class SampleApplication extends Application {
         ClusterInitLoader.init(new ImageLoaderInterface() {
             @Override
             public int placeholder() {
-
                 return R.drawable.ic_assignment_late_green_300_48dp;
-
             }
 
             @Override
-            public void load(Context context, ScotchImageView clusterImageZoom, Uri url, int placeholder) {
-
+            public void load(Context context, ScotchImageView clusterImageZoom, Uri url, @DrawableRes int placeholder) {
                 Glide.with(context).load(url).asBitmap().placeholder(placeholder).into(clusterImageZoom);
-
             }
 
             @Override
@@ -40,6 +37,7 @@ public class SampleApplication extends Application {
                 Glide.clear(clusterImageZoom);
             }
         });
+
     }
 
 }
