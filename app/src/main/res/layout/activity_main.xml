@@ -1,17 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
 
     <it.ninepatch.scotchimageview.ScotchImageView
-        android:id="@+id/image"
+        android:id="@+id/scotchimageview1"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="centerInside"
-        app:circle="true"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scaleType="centerCrop"
+        app:circle="false"
+        android:background="@color/colorPrimaryDark"
         app:placeholder="@mipmap/ic_launcher"
         app:zoomable="true" />
-    <!--     app:url_image="http://feelgrafix.com/data/wallpapers/wallpapers-20.jpg" -->
-</RelativeLayout>
+
+
+    <it.ninepatch.scotchimageview.ScotchImageView
+        android:id="@+id/scotchimageview2"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:scaleType="centerCrop"
+        app:circle="false"
+        android:background="@color/colorPrimary"
+        app:placeholder="@mipmap/ic_launcher"
+        app:url_image="http://feelgrafix.com/data/wallpapers/wallpapers-20.jpg"
+        app:zoomable="false" />
+
+</LinearLayout>

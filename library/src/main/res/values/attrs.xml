@@ -5,5 +5,7 @@
         <attr name="url_image" format="string" />
         <attr name="placeholder" format="reference" />
         <attr name="circle" format="boolean"/>
+        <attr name="border_width" format="float" />
+        <attr name="border_color" format="color" />
     </declare-styleable>
 </resources>

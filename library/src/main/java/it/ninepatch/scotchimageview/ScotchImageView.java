@@ -4,11 +4,11 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Bitmap;
 import android.graphics.BitmapShader;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.PointF;
-import android.graphics.RectF;
 import android.graphics.Shader;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
@@ -31,8 +31,8 @@ import it.ninepatch.scotchimageview.utils.ScotchImageCostant;
  **/
 public class ScotchImageView extends ImageView {
 
-    public static String TAG = "ScotchImageView";
-
+    private static final float DEFAULT_SHADOW_RADIUS = 8.0f;
+    public static String TAG = ScotchImageView.class.getSimpleName();
     private Matrix matrix = new Matrix();
     private int mode = ScotchImageCostant.NONE;
     private PointF last = new PointF();
@@ -46,34 +46,32 @@ public class ScotchImageView extends ImageView {
     private float right, bottom, origWidth, origHeight, bmWidth, bmHeight;
     private ScaleGestureDetector scaleGestureDetector;
     private int placeholder;
+    private int canvasSize;
 
 
-    //circle opt
-    private RectF drawableRect;
-    private RectF borderRect;
-    private Matrix shaderMatrix;
-    private Paint bitmapPaint;
-    private Paint borderPaint;
-    private Paint fillPaint;
+
+
+    private Bitmap bitmap;
+
 
     private int borderColor = Color.BLACK;
     private int borderWidth = 0;
-    private int fillColor = Color.TRANSPARENT;
-    private Bitmap bitmap;
-    private BitmapShader bitmapShader;
-    private int bitmapWidth;
-    private int bitmapHeight;
-    private float drawableRadius;
-    private float borderRadius;
+    private boolean circle;
+    private Paint roundPaint;
 
     public ScotchImageView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         super.setClickable(true);
+
         TypedArray a = context.obtainStyledAttributes(attrs, R.styleable.ZoomImage, defStyleAttr, 0);
+        roundPaint = new Paint();
         setPlaceholder(a.getResourceId(R.styleable.ZoomImage_placeholder, 0));
         setUrlImage(a.getString(R.styleable.ZoomImage_url_image));
+        //  setupCircle(a.getBoolean(R.styleable.ZoomImage_circle, false));
+        circle = a.getBoolean(R.styleable.ZoomImage_circle, false);
+        borderWidth = a.getDimensionPixelOffset(R.styleable.ZoomImage_border_width, 0);
+        borderColor = a.getDimensionPixelOffset(R.styleable.ZoomImage_border_color, Color.BLACK);
         setupZoom(a.getBoolean(R.styleable.ZoomImage_zoomable, false));
-        setupCircle(a.getBoolean(R.styleable.ZoomImage_circle, false));
         a.recycle();
 
     }
@@ -82,13 +80,11 @@ public class ScotchImageView extends ImageView {
         this(context, attr, 0);
     }
 
+
     public void setPlaceholder(@DrawableRes int placeholder) {
         this.placeholder = placeholder;
     }
 
-    public void setMaxScale(float maxScale) {
-        this.maxScale = maxScale;
-    }
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
@@ -114,8 +110,17 @@ public class ScotchImageView extends ImageView {
         setImageMatrix(matrix);
     }
 
+
+    public void setZoomable(boolean zoomable) {
+        setupZoom(zoomable);
+    }
+
     private void setupZoom(boolean zoomable) {
-        if (!zoomable) return;
+
+        if (!zoomable) {
+            setOnTouchListener(null);
+            return;
+        }
         if (getDrawable() != null) {
             Bitmap bitmap = ((BitmapDrawable) getDrawable()).getBitmap();
             setImageBitmap(bitmap);
@@ -128,7 +133,6 @@ public class ScotchImageView extends ImageView {
         setScaleType(ScaleType.MATRIX);
 
         setOnTouchListener(new OnTouchListener() {
-
             @Override
             public boolean onTouch(View v, MotionEvent event) {
                 scaleGestureDetector.onTouchEvent(event);
@@ -240,7 +244,6 @@ public class ScotchImageView extends ImageView {
         Bitmap bitmap = ((BitmapDrawable) drawable).getBitmap();
         bmWidth = bitmap.getWidth();
         bmHeight = bitmap.getHeight();
-
     }
 
     @Override
@@ -252,6 +255,7 @@ public class ScotchImageView extends ImageView {
 
         bmWidth = bitmap.getWidth();
         bmHeight = bitmap.getHeight();
+
     }
 
     /**
@@ -270,6 +274,7 @@ public class ScotchImageView extends ImageView {
      *
      * @param url image url
      */
+
     public void setUrlImage(Uri url) {
         if (url == null) return;
         ImageLoaderInterface initLoader = ScotchInitLoader.getInstance().getImageLoaderInterface();
@@ -281,88 +286,74 @@ public class ScotchImageView extends ImageView {
         initLoader.load(getContext(), this, url, placeholder);
     }
 
-    private void setupCircle(boolean circle) {
 
-        if (!circle) return;
+    private void updateShader() {
+        if (bitmap == null)
+            return;
 
-        if (getWidth() == 0 && getHeight() == 0) {
+        // Crop Center Image
+        bitmap = cropBitmap(bitmap);
+
+        // Create Shader
+        BitmapShader shader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
+
+        // Center Image in Shader
+        Matrix matrix = new Matrix();
+        matrix.setScale((float) canvasSize / (float) bitmap.getWidth(), (float) canvasSize / (float) bitmap.getHeight());
+        shader.setLocalMatrix(matrix);
+
+        // Set Shader in Paint
+        roundPaint.setShader(shader);
+    }
+
+    @Override
+    public void onDraw(Canvas canvas) {
+        if (!circle) {
+            super.onDraw(canvas);
             return;
         }
-
-        bitmap = ((BitmapDrawable) getDrawable()).getBitmap();
-
-        drawableRect = new RectF();
-        borderRect = new RectF();
-        shaderMatrix = new Matrix();
-        bitmapPaint = new Paint();
-        borderPaint = new Paint();
-        fillPaint = new Paint();
+        // Load the bitmap
 
 
-        bitmapShader = new BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP);
-
-        bitmapPaint.setAntiAlias(true);
-        bitmapPaint.setShader(bitmapShader);
-        borderPaint.setStyle(Paint.Style.STROKE);
-        borderPaint.setAntiAlias(true);
-        borderPaint.setColor(borderColor);
-        borderPaint.setStrokeWidth(borderWidth);
-
-        fillPaint.setStyle(Paint.Style.FILL);
-        fillPaint.setAntiAlias(true);
-        fillPaint.setColor(fillColor);
-
-        bitmapHeight = bitmap.getHeight();
-        bitmapWidth = bitmap.getWidth();
-
-        borderRect.set(getRect());
-        borderRadius = Math.min((borderRect.height() - borderWidth) / 2.0f, (borderRect.width() - borderWidth) / 2.0f);
-
-        drawableRect.set(borderRect);
-       /* if (!borderOverlay && borderWidth > 0) {
-            drawableRect.inset(borderWidth - 1.0f, borderWidth - 1.0f);
+        if (getDrawable() != null) {
+            bitmap = ((BitmapDrawable) getDrawable()).getBitmap();
         }
-*/
-        drawableRadius = Math.min(drawableRect.height() / 2.0f, drawableRect.width() / 2.0f);
+        updateShader();
+
+        // Check if image isn't null
+        if (bitmap == null)
+            return;
+
+        if (!isInEditMode()) {
+            canvasSize = canvas.getWidth();
+            if (canvas.getHeight() < canvasSize) {
+                canvasSize = canvas.getHeight();
+            }
+        }
 
 
-        updateShaderMatrix();
-        invalidate();
+        int circleCenter = (int) (canvasSize - (borderWidth * 2)) / 2;
+
+        canvas.drawCircle(circleCenter + borderWidth, circleCenter + borderWidth, circleCenter - (DEFAULT_SHADOW_RADIUS + DEFAULT_SHADOW_RADIUS / 2), roundPaint);
+
     }
 
-    private RectF getRect() {
-        int width = getWidth() - getPaddingLeft() - getPaddingRight();
-        int height = getHeight() - getPaddingTop() - getPaddingBottom();
-
-        int sideLength = Math.min(height, width);
-
-        float left = getPaddingLeft() + (width - sideLength) / 2f;
-        float top = getPaddingTop() + (height - sideLength) / 2f;
-
-        return new RectF(left, top, left + sideLength, top + sideLength);
-    }
-
-
-    private void updateShaderMatrix() {
-
-        float scale;
-        float dx = 0;
-        float dy = 0;
-
-
-        if (this.bitmapWidth * this.drawableRect.height() > drawableRect.width() * bitmapHeight) {
-            scale = drawableRect.height() / (float) bitmapHeight;
-            dx = (drawableRect.width() - bitmapWidth * scale) * 0.5f;
+    private Bitmap cropBitmap(Bitmap bitmap) {
+        Bitmap bmp;
+        if (bitmap.getWidth() >= bitmap.getHeight()) {
+            bmp = Bitmap.createBitmap(
+                    bitmap,
+                    bitmap.getWidth() / 2 - bitmap.getHeight() / 2,
+                    0,
+                    bitmap.getHeight(), bitmap.getHeight());
         } else {
-            scale = drawableRect.width() / (float) bitmapWidth;
-            dy = (drawableRect.height() - bitmapHeight * scale) * 0.5f;
+            bmp = Bitmap.createBitmap(
+                    bitmap,
+                    0,
+                    bitmap.getHeight() / 2 - bitmap.getWidth() / 2,
+                    bitmap.getWidth(), bitmap.getWidth());
         }
-        shaderMatrix.set(null);
-        shaderMatrix.setScale(scale, scale);
-        shaderMatrix.postTranslate((int) (dx + 0.5f) + drawableRect.left, (int) (dy + 0.5f) + drawableRect.top);
-
-        bitmapShader.setLocalMatrix(shaderMatrix);
-
+        return bmp;
     }
 
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
@@ -427,4 +418,5 @@ public class ScotchImageView extends ImageView {
         }
 
     }
+
 }

@@ -28,12 +28,12 @@ public class SampleApplication extends Application {
 
             @Override
             public void load(Context context, ScotchImageView scotchImageView, Uri url, int placeholder) {
-                Glide.with(context).load(url).asBitmap().into(scotchImageView);
+                Glide.with(context).load(url).asBitmap().placeholder(placeholder).into(scotchImageView);
             }
 
             @Override
             public void clear(ScotchImageView scotchImageView) {
-           Glide.clear(scotchImageView);
+                   Glide.clear(scotchImageView);
             }
         });
 
